@@ -68,3 +68,7 @@ export {
 // Client
 export type { ConnectionState, HandshakeResult } from "./client.js"
 export { createFlightClient, FlightClient } from "./client.js"
+
+// Location utilities
+export type { LocationScheme, ParsedLocation } from "./location.js"
+export { createLocation, LocationParseError, parseLocation } from "./location.js"

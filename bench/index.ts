@@ -6,36 +6,36 @@
 
 /* eslint-disable no-console */
 
-import { greet } from "../src/greet"
+import { parseLocation } from "../src/location"
 
 const ITERATIONS = 100_000
 
 console.log("Running benchmarks...\n")
 
-// Benchmark informal greeting
-const informalStart = performance.now()
+// Benchmark parsing plain gRPC URI
+const grpcStart = performance.now()
 for (let i = 0; i < ITERATIONS; i++) {
-  greet({ name: "World" })
+  parseLocation("grpc://localhost:8815")
 }
-const informalEnd = performance.now()
-const informalTime = informalEnd - informalStart
+const grpcEnd = performance.now()
+const grpcTime = grpcEnd - grpcStart
 
-console.log(`greet (informal): ${ITERATIONS.toLocaleString()} iterations`)
-console.log(`  Total: ${informalTime.toFixed(2)}ms`)
-console.log(`  Per call: ${((informalTime / ITERATIONS) * 1000).toFixed(3)}μs`)
+console.log(`parseLocation (grpc://): ${ITERATIONS.toLocaleString()} iterations`)
+console.log(`  Total: ${grpcTime.toFixed(2)}ms`)
+console.log(`  Per call: ${((grpcTime / ITERATIONS) * 1000).toFixed(3)}μs`)
 console.log()
 
-// Benchmark formal greeting
-const formalStart = performance.now()
+// Benchmark parsing gRPC+TLS URI
+const tlsStart = performance.now()
 for (let i = 0; i < ITERATIONS; i++) {
-  greet({ name: "World", formal: true })
+  parseLocation("grpc+tls://flight.example.com:443")
 }
-const formalEnd = performance.now()
-const formalTime = formalEnd - formalStart
+const tlsEnd = performance.now()
+const tlsTime = tlsEnd - tlsStart
 
-console.log(`greet (formal): ${ITERATIONS.toLocaleString()} iterations`)
-console.log(`  Total: ${formalTime.toFixed(2)}ms`)
-console.log(`  Per call: ${((formalTime / ITERATIONS) * 1000).toFixed(3)}μs`)
+console.log(`parseLocation (grpc+tls://): ${ITERATIONS.toLocaleString()} iterations`)
+console.log(`  Total: ${tlsTime.toFixed(2)}ms`)
+console.log(`  Per call: ${((tlsTime / ITERATIONS) * 1000).toFixed(3)}μs`)
 console.log()
 
 console.log("Benchmarks complete.")
