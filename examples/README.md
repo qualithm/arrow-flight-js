@@ -65,6 +65,7 @@ Different authentication methods for connecting. Demonstrates:
 - Bearer token authentication (JWT/OAuth)
 - Handshake authentication
 - Two-step connection pattern
+- Raw handshake payload for custom protocols
 
 ### [tls-configuration.ts](tls-configuration.ts)
 
@@ -74,6 +75,7 @@ Secure connections with TLS and mTLS. Demonstrates:
 - Custom root CA certificates
 - Mutual TLS (mTLS) with client certificates
 - Server name override
+- Skipping certificate verification (development only)
 - Insecure connections (development only)
 
 ### [getting-data.ts](getting-data.ts)
@@ -137,6 +139,7 @@ Configuring RPC call options. Demonstrates:
 - Adding custom headers
 - Request tracing with correlation IDs
 - Combining multiple options
+- Configuring channel options (keepalive, max message size, connection timeout)
 
 ### [error-handling.ts](error-handling.ts)
 

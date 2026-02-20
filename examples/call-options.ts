@@ -36,6 +36,10 @@ async function main(): Promise<void> {
     // Example 4: Combined options
     console.log("\n--- Example 4: Combined Options ---")
     await withCombinedOptions(client)
+
+    // Example 5: Channel options
+    console.log("\n--- Example 5: Channel Options ---")
+    await withChannelOptions()
   } finally {
     client.close()
     console.log("\nConnection closed")
@@ -129,6 +133,43 @@ async function withCombinedOptions(
     console.log("  Schema bytes:", String(info.schema.length))
   } catch (error) {
     console.log("  Request failed")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
+}
+
+async function withChannelOptions(): Promise<void> {
+  // Channel options configure the underlying gRPC connection
+  // These are set at client creation time, not per-request
+  try {
+    const client = await createFlightClient({
+      host: "localhost",
+      port: 8815,
+      tls: false,
+      channelOptions: {
+        // Increase max message size for large Arrow batches (100MB)
+        maxReceiveMessageLength: 100 * 1024 * 1024,
+        maxSendMessageLength: 100 * 1024 * 1024,
+
+        // Keepalive settings for long-lived connections
+        keepaliveTimeMs: 30000, // Send keepalive ping every 30 seconds
+        keepaliveTimeoutMs: 10000, // Wait 10 seconds for response
+        keepalivePermitWithoutCalls: true, // Send pings even when idle
+
+        // Connection timeout
+        connectTimeoutMs: 5000 // 5 second connection timeout
+      }
+    })
+
+    console.log("  Connected with custom channel options")
+    console.log("  Address:", client.address)
+
+    // Channel options cannot be changed after connection
+    // Create a new client if different options are needed
+
+    client.close()
+    console.log("  Connection closed")
+  } catch (error) {
+    console.log("  Connection failed")
     console.log("  Error:", error instanceof Error ? error.message : error)
   }
 }

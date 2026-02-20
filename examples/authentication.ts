@@ -33,6 +33,10 @@ async function main(): Promise<void> {
   // Example 5: Manual bearer token
   console.log("\n--- Example 5: Manual Bearer Token ---")
   await withManualToken()
+
+  // Example 6: Raw handshake payload
+  console.log("\n--- Example 6: Raw Handshake Payload ---")
+  await withRawHandshakePayload()
 }
 
 async function withNoAuth(): Promise<void> {
@@ -159,6 +163,48 @@ async function withManualToken(): Promise<void> {
 
   client.close()
   console.log("  Connection closed")
+}
+
+async function withRawHandshakePayload(): Promise<void> {
+  // For servers that use custom handshake protocols,
+  // you can send a raw payload buffer
+  try {
+    const client = new FlightClient({
+      host: "localhost",
+      port: 8815,
+      tls: false,
+      auth: {
+        type: "handshake",
+        // Custom binary payload (e.g., serialised protobuf, JSON, etc.)
+        payload: Buffer.from(
+          JSON.stringify({
+            apiKey: "your-api-key",
+            clientId: "client-123",
+            timestamp: Date.now()
+          })
+        )
+      }
+    })
+
+    await client.connect()
+    console.log("  Connected, performing custom handshake...")
+
+    // The handshake sends the raw payload to the server
+    const result = await client.handshake()
+
+    console.log("  Custom handshake completed")
+    console.log("  Response payload:", result.payload.length, "bytes")
+
+    if (result.token !== undefined) {
+      console.log("  Received token:", `${result.token.slice(0, 20)}...`)
+    }
+
+    client.close()
+    console.log("  Connection closed")
+  } catch (error) {
+    console.log("  Custom handshake failed (expected if server doesn't support it)")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
 }
 
 main().catch(console.error)

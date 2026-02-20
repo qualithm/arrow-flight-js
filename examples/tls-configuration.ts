@@ -30,8 +30,12 @@ async function main(): Promise<void> {
   console.log("\n--- Example 4: Server Name Override ---")
   showServerNameOverride()
 
-  // Example 5: Insecure connection
-  console.log("\n--- Example 5: Insecure Connection ---")
+  // Example 5: Skip certificate verification
+  console.log("\n--- Example 5: Skip Certificate Verification ---")
+  showSkipVerification()
+
+  // Example 6: Insecure connection
+  console.log("\n--- Example 6: Insecure Connection ---")
   await showInsecure()
 }
 
@@ -117,6 +121,29 @@ function showServerNameOverride(): void {
   console.log("")
   console.log("  // This allows connecting by IP while verifying the")
   console.log('  // certificate against "flight.example.com"')
+}
+
+function showSkipVerification(): void {
+  // Skip server certificate verification entirely
+  // WARNING: This disables security and should ONLY be used for development!
+  console.log("  WARNING: Skipping certificate verification is insecure!")
+  console.log("  Only use for development with self-signed certificates.")
+  console.log("")
+  console.log("  Code example:")
+  console.log("")
+  console.log("  const client = await createFlightClient({")
+  console.log('    host: "localhost",')
+  console.log("    port: 8815,")
+  console.log("    tls: {")
+  console.log("      // Accept any certificate (self-signed, expired, wrong host, etc.)")
+  console.log("      verifyServerCert: false")
+  console.log("    }")
+  console.log("  })")
+  console.log("")
+  console.log("  // This is useful for:")
+  console.log("  // - Local development with self-signed certs")
+  console.log("  // - Testing against staging environments")
+  console.log("  // NEVER use in production!")
 }
 
 async function showInsecure(): Promise<void> {
