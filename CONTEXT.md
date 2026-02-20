@@ -117,7 +117,7 @@ for that).
 
 ### M1: Project Setup
 
-- [ ] Update package.json with correct name/description
+- [x] Update package.json with correct name/description
 - [ ] Define proto file handling strategy
 - [ ] Add core dependencies (`apache-arrow`, gRPC library)
 - [ ] Set up proto compilation pipeline
