@@ -151,7 +151,15 @@ for that).
 - [x] Implement `DoAction`
 - [x] Implement `ListActions`
 - [x] Add comprehensive error handling
-- [ ] Documentation and examples
+- [x] Documentation and examples
+
+### M6: Testing Infrastructure
+
+- [ ] Add Docker Compose with Arrow Flight test server
+- [ ] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
+- [ ] Run unit tests on Node.js in CI
+- [ ] Enable coverage reporting with threshold enforcement
+- [ ] Add test fixtures for Arrow schemas/data
 
 ---
 
@@ -159,5 +167,6 @@ for that).
 
 > Append-only. Never edit or delete existing entries.
 
-| Date | Learning |
-| ---- | -------- |
+| Date       | Learning                                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics |
