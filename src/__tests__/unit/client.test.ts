@@ -194,6 +194,20 @@ describe("FlightClient", () => {
       }
     })
   })
+
+  describe("doPut", () => {
+    it("throws when client is not connected", () => {
+      const client = new FlightClient({ host: "localhost" })
+      expect(() => client.doPut()).toThrow("client is not connected")
+    })
+  })
+
+  describe("doExchange", () => {
+    it("throws when client is not connected", () => {
+      const client = new FlightClient({ host: "localhost" })
+      expect(() => client.doExchange()).toThrow("client is not connected")
+    })
+  })
 })
 
 describe("createFlightClient", () => {

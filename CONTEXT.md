@@ -143,8 +143,8 @@ for that).
 
 ### M4: Write Operations
 
-- [ ] Implement `DoPut` with Arrow IPC encoding
-- [ ] Implement `DoExchange` for bidirectional streams
+- [x] Implement `DoPut` with Arrow IPC encoding
+- [x] Implement `DoExchange` for bidirectional streams
 
 ### M5: Actions & Polish
 

@@ -7,6 +7,7 @@
 import {
   type ChannelCredentials,
   type ChannelOptions,
+  type ClientDuplexStream,
   type ClientReadableStream,
   credentials as grpcCredentials,
   Metadata
@@ -18,6 +19,7 @@ import {
   type FlightData,
   FlightServiceClient,
   type HandshakeResponse,
+  type PutResult,
   type SchemaResult
 } from "./generated/arrow/flight/protocol/Flight.js"
 import {
@@ -478,6 +480,93 @@ export class FlightClient {
   }
 
   /**
+   * Uploads data to the Flight server.
+   *
+   * Creates a bidirectional stream for uploading Arrow data. The first
+   * FlightData message should include a flight descriptor to identify
+   * the stream. Subsequent messages contain the Arrow IPC data.
+   *
+   * @param callOptions - Optional call-level options
+   * @returns A DoPut stream for sending data and receiving acknowledgements
+   * @throws {FlightError} If the operation fails
+   *
+   * @example
+   * ```ts
+   * const stream = client.doPut()
+   *
+   * // Send descriptor with first message
+   * stream.write({
+   *   flightDescriptor: { type: 1, path: ["my", "table"], cmd: Buffer.alloc(0) },
+   *   dataHeader: schemaBuffer,
+   *   appMetadata: Buffer.alloc(0),
+   *   dataBody: Buffer.alloc(0)
+   * })
+   *
+   * // Send data batches
+   * for (const batch of batches) {
+   *   stream.write({
+   *     flightDescriptor: undefined,
+   *     dataHeader: batch.header,
+   *     appMetadata: Buffer.alloc(0),
+   *     dataBody: batch.body
+   *   })
+   * }
+   *
+   * // End the stream and wait for acknowledgements
+   * stream.end()
+   * for await (const result of stream.results()) {
+   *   console.log("Ack:", result.appMetadata)
+   * }
+   * ```
+   */
+  doPut(callOptions?: CallOptions): DoPutStream {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+    const grpcStream = grpcClient.doPut(metadata)
+
+    return new DoPutStream(grpcStream, (err) => this.wrapError(err))
+  }
+
+  /**
+   * Opens a bidirectional data exchange with the Flight server.
+   *
+   * Creates a bidirectional stream for exchanging Arrow data. This is
+   * useful for operations where the client needs to send data and receive
+   * transformed results in a streaming fashion.
+   *
+   * @param callOptions - Optional call-level options
+   * @returns A DoExchange stream for bidirectional data exchange
+   * @throws {FlightError} If the operation fails
+   *
+   * @example
+   * ```ts
+   * const stream = client.doExchange()
+   *
+   * // Send data
+   * stream.write({
+   *   flightDescriptor: { type: 2, path: [], cmd: Buffer.from("transform") },
+   *   dataHeader: headerBytes,
+   *   appMetadata: Buffer.alloc(0),
+   *   dataBody: dataBytes
+   * })
+   *
+   * // Receive results while sending more data
+   * for await (const data of stream.results()) {
+   *   console.log("Received:", data.dataBody.length, "bytes")
+   * }
+   *
+   * stream.end()
+   * ```
+   */
+  doExchange(callOptions?: CallOptions): DoExchangeStream {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+    const grpcStream = grpcClient.doExchange(metadata)
+
+    return new DoExchangeStream(grpcStream, (err) => this.wrapError(err))
+  }
+
+  /**
    * Converts a gRPC readable stream to an async iterable.
    *
    * @internal
@@ -702,6 +791,243 @@ export class FlightClient {
     }
 
     return new FlightError(String(error), "UNKNOWN")
+  }
+}
+
+/**
+ * Stream for DoPut operations.
+ *
+ * Allows sending FlightData messages and receiving PutResult acknowledgements.
+ */
+export class DoPutStream {
+  private readonly stream: ClientDuplexStream<FlightData, PutResult>
+  private readonly wrapError: (err: unknown) => FlightError
+
+  constructor(
+    stream: ClientDuplexStream<FlightData, PutResult>,
+    wrapError: (err: unknown) => FlightError
+  ) {
+    this.stream = stream
+    this.wrapError = wrapError
+  }
+
+  /**
+   * Writes a FlightData message to the stream.
+   *
+   * @param data - The FlightData message to send
+   * @returns true if the write was successful, false if backpressure
+   */
+  write(data: FlightData): boolean {
+    return this.stream.write(data)
+  }
+
+  /**
+   * Signals that no more data will be written.
+   *
+   * Call this after sending all data to properly close the stream.
+   */
+  end(): void {
+    this.stream.end()
+  }
+
+  /**
+   * Cancels the stream.
+   */
+  cancel(): void {
+    this.stream.cancel()
+  }
+
+  /**
+   * Returns an async iterable over PutResult acknowledgements.
+   *
+   * @yields PutResult messages from the server
+   */
+  async *results(): AsyncGenerator<PutResult, void, undefined> {
+    yield* this.streamToAsyncIterable()
+  }
+
+  /**
+   * Waits for the stream to complete and returns all results.
+   *
+   * @returns All PutResult messages from the server
+   */
+  async collectResults(): Promise<PutResult[]> {
+    const results: PutResult[] = []
+    for await (const result of this.results()) {
+      results.push(result)
+    }
+    return results
+  }
+
+  private async *streamToAsyncIterable(): AsyncGenerator<PutResult, void, undefined> {
+    type QueueItem =
+      | { type: "data"; value: PutResult }
+      | { type: "error"; value: Error }
+      | { type: "end" }
+    const queue: QueueItem[] = []
+    let notify: (() => void) | null = null
+
+    const push = (item: QueueItem): void => {
+      queue.push(item)
+      if (notify !== null) {
+        notify()
+        notify = null
+      }
+    }
+
+    this.stream.on("data", (data: PutResult) => {
+      push({ type: "data", value: data })
+    })
+
+    this.stream.on("error", (err: Error) => {
+      push({ type: "error", value: this.wrapError(err) })
+    })
+
+    this.stream.on("end", () => {
+      push({ type: "end" })
+    })
+
+    let done = false
+    while (!done) {
+      while (queue.length === 0) {
+        await new Promise<void>((r) => {
+          notify = r
+        })
+      }
+
+      const item = queue[0]
+      queue.splice(0, 1)
+
+      switch (item.type) {
+        case "data":
+          yield item.value
+          break
+        case "error":
+          throw item.value
+        case "end":
+          done = true
+          break
+      }
+    }
+  }
+}
+
+/**
+ * Stream for DoExchange operations.
+ *
+ * Allows bidirectional exchange of FlightData messages.
+ */
+export class DoExchangeStream {
+  private readonly stream: ClientDuplexStream<FlightData, FlightData>
+  private readonly wrapError: (err: unknown) => FlightError
+
+  constructor(
+    stream: ClientDuplexStream<FlightData, FlightData>,
+    wrapError: (err: unknown) => FlightError
+  ) {
+    this.stream = stream
+    this.wrapError = wrapError
+  }
+
+  /**
+   * Writes a FlightData message to the stream.
+   *
+   * @param data - The FlightData message to send
+   * @returns true if the write was successful, false if backpressure
+   */
+  write(data: FlightData): boolean {
+    return this.stream.write(data)
+  }
+
+  /**
+   * Signals that no more data will be written.
+   *
+   * Call this after sending all data. The server may continue
+   * sending data after you call end().
+   */
+  end(): void {
+    this.stream.end()
+  }
+
+  /**
+   * Cancels the stream.
+   */
+  cancel(): void {
+    this.stream.cancel()
+  }
+
+  /**
+   * Returns an async iterable over received FlightData messages.
+   *
+   * @yields FlightData messages from the server
+   */
+  async *results(): AsyncGenerator<FlightData, void, undefined> {
+    yield* this.streamToAsyncIterable()
+  }
+
+  /**
+   * Waits for the stream to complete and returns all results.
+   *
+   * @returns All FlightData messages from the server
+   */
+  async collectResults(): Promise<FlightData[]> {
+    const results: FlightData[] = []
+    for await (const result of this.results()) {
+      results.push(result)
+    }
+    return results
+  }
+
+  private async *streamToAsyncIterable(): AsyncGenerator<FlightData, void, undefined> {
+    type QueueItem =
+      | { type: "data"; value: FlightData }
+      | { type: "error"; value: Error }
+      | { type: "end" }
+    const queue: QueueItem[] = []
+    let notify: (() => void) | null = null
+
+    const push = (item: QueueItem): void => {
+      queue.push(item)
+      if (notify !== null) {
+        notify()
+        notify = null
+      }
+    }
+
+    this.stream.on("data", (data: FlightData) => {
+      push({ type: "data", value: data })
+    })
+
+    this.stream.on("error", (err: Error) => {
+      push({ type: "error", value: this.wrapError(err) })
+    })
+
+    this.stream.on("end", () => {
+      push({ type: "end" })
+    })
+
+    let done = false
+    while (!done) {
+      while (queue.length === 0) {
+        await new Promise<void>((r) => {
+          notify = r
+        })
+      }
+
+      const item = queue[0]
+      queue.splice(0, 1)
+
+      switch (item.type) {
+        case "data":
+          yield item.value
+          break
+        case "error":
+          throw item.value
+        case "end":
+          done = true
+          break
+      }
+    }
   }
 }
 
