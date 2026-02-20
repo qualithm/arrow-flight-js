@@ -155,7 +155,7 @@ for that).
 
 ### M6: Testing Infrastructure
 
-- [ ] Add Docker Compose with Arrow Flight test server
+- [ ] Add test connection configuration for Arrow Flight server
 - [ ] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
 - [ ] Run tests on Bun (unit + integration)
 - [ ] Run tests on Node.js (unit + integration)
