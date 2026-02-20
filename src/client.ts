@@ -841,17 +841,11 @@ export class FlightClient {
 
   /**
    * Wraps an error in a FlightError.
+   *
+   * @internal
    */
   private wrapError(error: unknown): FlightError {
-    if (error instanceof FlightError) {
-      return error
-    }
-
-    if (error instanceof Error) {
-      return new FlightError(error.message, "UNKNOWN", error.stack)
-    }
-
-    return new FlightError(String(error), "UNKNOWN")
+    return FlightError.fromGrpcError(error)
   }
 }
 

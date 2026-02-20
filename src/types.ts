@@ -7,7 +7,12 @@
  * @packageDocumentation
  */
 
-import type { ChannelCredentials } from "@grpc/grpc-js"
+import {
+  type ChannelCredentials,
+  type Metadata,
+  status as GrpcStatus,
+  type StatusObject
+} from "@grpc/grpc-js"
 
 import type {
   CancelStatus as ProtoCancelStatus,
@@ -423,17 +428,241 @@ export type DoPutResult = {
 
 /**
  * Errors that can be thrown by Flight operations.
+ *
+ * FlightError wraps gRPC errors with a typed error code and optional
+ * additional metadata. Use the static helper methods or `isFlightError()`
+ * to check error types.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   await client.getFlightInfo(descriptor)
+ * } catch (error) {
+ *   if (FlightError.isNotFound(error)) {
+ *     console.log("Flight not found")
+ *   } else if (FlightError.isUnauthenticated(error)) {
+ *     console.log("Authentication required")
+ *   }
+ * }
+ * ```
  */
 export class FlightError extends Error {
   readonly code: FlightErrorCode
   readonly details?: string
+  readonly metadata?: Record<string, string>
+  readonly grpcCode?: number
 
-  constructor(message: string, code: FlightErrorCode, details?: string) {
-    super(message)
+  constructor(
+    message: string,
+    code: FlightErrorCode,
+    options?: {
+      details?: string
+      metadata?: Record<string, string>
+      grpcCode?: number
+      cause?: Error
+    }
+  ) {
+    super(message, options?.cause !== undefined ? { cause: options.cause } : undefined)
     this.name = "FlightError"
     this.code = code
-    this.details = details
+    this.details = options?.details
+    this.metadata = options?.metadata
+    this.grpcCode = options?.grpcCode
   }
+
+  /**
+   * Creates a FlightError from a gRPC error.
+   *
+   * @internal
+   */
+  static fromGrpcError(error: unknown): FlightError {
+    if (error instanceof FlightError) {
+      return error
+    }
+
+    // Check if it's a gRPC ServiceError (has code property)
+    if (isGrpcServiceError(error)) {
+      const code = grpcStatusToFlightCode(error.code)
+      const metadata = extractGrpcMetadata(error.metadata)
+
+      const message = error.details.length > 0 ? error.details : error.message
+      return new FlightError(message, code, {
+        details: error.details.length > 0 ? error.details : undefined,
+        metadata,
+        grpcCode: error.code,
+        cause: error
+      })
+    }
+
+    if (error instanceof Error) {
+      return new FlightError(error.message, "UNKNOWN", {
+        cause: error
+      })
+    }
+
+    return new FlightError(String(error), "UNKNOWN")
+  }
+
+  /**
+   * Checks if an error is a FlightError.
+   */
+  static isFlightError(error: unknown): error is FlightError {
+    return error instanceof FlightError
+  }
+
+  /**
+   * Checks if an error indicates the resource was not found.
+   */
+  static isNotFound(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "NOT_FOUND"
+  }
+
+  /**
+   * Checks if an error indicates authentication is required.
+   */
+  static isUnauthenticated(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "UNAUTHENTICATED"
+  }
+
+  /**
+   * Checks if an error indicates permission was denied.
+   */
+  static isPermissionDenied(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "PERMISSION_DENIED"
+  }
+
+  /**
+   * Checks if an error indicates an invalid argument was provided.
+   */
+  static isInvalidArgument(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "INVALID_ARGUMENT"
+  }
+
+  /**
+   * Checks if an error indicates the operation was cancelled.
+   */
+  static isCancelled(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "CANCELLED"
+  }
+
+  /**
+   * Checks if an error indicates the deadline was exceeded.
+   */
+  static isDeadlineExceeded(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "DEADLINE_EXCEEDED"
+  }
+
+  /**
+   * Checks if an error indicates the service is unavailable.
+   */
+  static isUnavailable(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "UNAVAILABLE"
+  }
+
+  /**
+   * Checks if an error indicates the operation is not implemented.
+   */
+  static isUnimplemented(error: unknown): boolean {
+    return error instanceof FlightError && error.code === "UNIMPLEMENTED"
+  }
+
+  /**
+   * Checks if the error is retriable (transient failure).
+   */
+  static isRetriable(error: unknown): boolean {
+    if (!(error instanceof FlightError)) {
+      return false
+    }
+    return (
+      error.code === "UNAVAILABLE" ||
+      error.code === "RESOURCE_EXHAUSTED" ||
+      error.code === "ABORTED"
+    )
+  }
+
+  /**
+   * Returns a string representation of the error.
+   */
+  override toString(): string {
+    let result = `FlightError [${this.code}]: ${this.message}`
+    if (this.details !== undefined && this.details !== this.message) {
+      result += ` (${this.details})`
+    }
+    return result
+  }
+}
+
+/**
+ * Type guard to check if an error is a gRPC ServiceError.
+ *
+ * @internal
+ */
+function isGrpcServiceError(error: unknown): error is GrpcServiceError {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as GrpcServiceError).code === "number" &&
+    "message" in error
+  )
+}
+
+/**
+ * gRPC ServiceError shape for type checking.
+ *
+ * @internal
+ */
+type GrpcServiceError = StatusObject & Error
+
+/**
+ * Converts a gRPC status code to a FlightErrorCode.
+ *
+ * @internal
+ */
+function grpcStatusToFlightCode(code: number): FlightErrorCode {
+  const mapping: Record<number, FlightErrorCode> = {
+    [GrpcStatus.CANCELLED]: "CANCELLED",
+    [GrpcStatus.UNKNOWN]: "UNKNOWN",
+    [GrpcStatus.INVALID_ARGUMENT]: "INVALID_ARGUMENT",
+    [GrpcStatus.DEADLINE_EXCEEDED]: "DEADLINE_EXCEEDED",
+    [GrpcStatus.NOT_FOUND]: "NOT_FOUND",
+    [GrpcStatus.ALREADY_EXISTS]: "ALREADY_EXISTS",
+    [GrpcStatus.PERMISSION_DENIED]: "PERMISSION_DENIED",
+    [GrpcStatus.RESOURCE_EXHAUSTED]: "RESOURCE_EXHAUSTED",
+    [GrpcStatus.FAILED_PRECONDITION]: "FAILED_PRECONDITION",
+    [GrpcStatus.ABORTED]: "ABORTED",
+    [GrpcStatus.OUT_OF_RANGE]: "OUT_OF_RANGE",
+    [GrpcStatus.UNIMPLEMENTED]: "UNIMPLEMENTED",
+    [GrpcStatus.INTERNAL]: "INTERNAL",
+    [GrpcStatus.UNAVAILABLE]: "UNAVAILABLE",
+    [GrpcStatus.DATA_LOSS]: "DATA_LOSS",
+    [GrpcStatus.UNAUTHENTICATED]: "UNAUTHENTICATED"
+  }
+  return mapping[code] ?? "UNKNOWN"
+}
+
+/**
+ * Extracts metadata from a gRPC error as a plain object.
+ *
+ * @internal
+ */
+function extractGrpcMetadata(metadata: Metadata | undefined): Record<string, string> | undefined {
+  if (metadata === undefined) {
+    return undefined
+  }
+
+  const result: Record<string, string> = {}
+  const map = metadata.getMap()
+  let hasEntries = false
+
+  for (const [key, value] of Object.entries(map)) {
+    if (typeof value === "string") {
+      result[key] = value
+      hasEntries = true
+    }
+  }
+
+  return hasEntries ? result : undefined
 }
 
 /**
