@@ -157,7 +157,9 @@ for that).
 
 - [ ] Add Docker Compose with Arrow Flight test server
 - [ ] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
-- [ ] Run unit tests on Node.js in CI
+- [ ] Run tests on Bun (unit + integration)
+- [ ] Run tests on Node.js (unit + integration)
+- [ ] Run tests on Deno (unit + integration)
 - [ ] Enable coverage reporting with threshold enforcement
 - [ ] Add test fixtures for Arrow schemas/data
 
