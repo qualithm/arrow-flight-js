@@ -238,6 +238,28 @@ describe("FlightClient", () => {
       }
     })
   })
+
+  describe("cancelFlightInfo", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      const mockFlightInfo = {
+        schema: Buffer.alloc(0),
+        flightDescriptor: undefined,
+        endpoint: [],
+        totalRecords: 0,
+        totalBytes: 0,
+        ordered: false,
+        appMetadata: Buffer.alloc(0)
+      }
+      try {
+        await client.cancelFlightInfo(mockFlightInfo)
+        expect.unreachable("expected cancelFlightInfo to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
 })
 
 describe("createFlightClient", () => {

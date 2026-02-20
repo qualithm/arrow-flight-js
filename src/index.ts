@@ -72,3 +72,9 @@ export { createFlightClient, DoExchangeStream, DoPutStream, FlightClient } from 
 // Location utilities
 export type { LocationScheme, ParsedLocation } from "./location.js"
 export { createLocation, LocationParseError, parseLocation } from "./location.js"
+
+// Proto encoders/decoders for advanced use cases (e.g. arrow-flight-sql-js)
+export {
+  CancelFlightInfoRequest as CancelFlightInfoRequestCodec,
+  CancelFlightInfoResult as CancelFlightInfoResultCodec
+} from "./generated/arrow/flight/protocol/Flight.js"

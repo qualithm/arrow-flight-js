@@ -166,8 +166,8 @@ for that).
 
 ### M7: Additional Flight Operations
 
-- [ ] Implement `cancelFlightInfo` method (CancelFlightInfo action) — needed by arrow-flight-sql-js
-- [ ] Export `CancelFlightInfoRequest` / `CancelFlightInfoResult` encoders from generated proto
+- [x] Implement `cancelFlightInfo` method (CancelFlightInfo action) — needed by arrow-flight-sql-js
+- [x] Export `CancelFlightInfoRequest` / `CancelFlightInfoResult` encoders from generated proto
 
 ---
 

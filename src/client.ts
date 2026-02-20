@@ -17,6 +17,8 @@ import {
   type Action,
   type ActionType,
   BasicAuth,
+  CancelFlightInfoRequest,
+  CancelFlightInfoResult,
   type Criteria,
   Empty,
   type FlightData,
@@ -28,10 +30,12 @@ import {
 } from "./generated/arrow/flight/protocol/Flight.js"
 import {
   type CallOptions,
+  type CancelStatus,
   type Descriptor,
   type FlightClientOptions,
   FlightError,
   type FlightInfo,
+  fromCancelStatusProto,
   type Ticket,
   type TlsOptions,
   toFlightDescriptor
@@ -625,6 +629,42 @@ export class FlightClient {
     const stream = grpcClient.listActions(Empty, metadata)
 
     yield* this.streamToAsyncIterable<ActionType>(stream)
+  }
+
+  /**
+   * Cancels a running flight operation.
+   *
+   * This sends a CancelFlightInfo action to the server to request cancellation
+   * of the flight identified by the provided FlightInfo.
+   *
+   * @param info - The FlightInfo identifying the flight to cancel
+   * @param callOptions - Optional call-level options
+   * @returns The cancellation status
+   * @throws {FlightError} If the cancellation request fails
+   *
+   * @example
+   * ```ts
+   * const flightInfo = await client.getFlightInfo({ type: "cmd", cmd: Buffer.from("query") })
+   * const status = await client.cancelFlightInfo(flightInfo)
+   * console.log("Cancel status:", status)
+   * ```
+   */
+  async cancelFlightInfo(info: FlightInfo, callOptions?: CallOptions): Promise<CancelStatus> {
+    // Encode the request
+    const request: CancelFlightInfoRequest = { info }
+    const body = Buffer.from(CancelFlightInfoRequest.encode(request).finish())
+
+    // Execute the action
+    const action: Action = { type: "CancelFlightInfo", body }
+
+    for await (const result of this.doAction(action, callOptions)) {
+      // Decode the first result and return the status
+      const cancelResult = CancelFlightInfoResult.decode(result.body)
+      return fromCancelStatusProto(cancelResult.status)
+    }
+
+    // No result returned - treat as unspecified
+    return "unspecified"
   }
 
   /**
