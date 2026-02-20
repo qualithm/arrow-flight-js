@@ -1,8 +1,8 @@
 /**
- * Authentication example.
+ * Authentication and TLS configuration example.
  *
- * Demonstrates different authentication methods for connecting
- * to a Flight server.
+ * Demonstrates different authentication methods and TLS configurations
+ * for connecting to a Flight server.
  *
  * @example
  * ```bash
@@ -37,6 +37,21 @@ async function main(): Promise<void> {
   // Example 6: Raw handshake payload
   console.log("\n--- Example 6: Raw Handshake Payload ---")
   await withRawHandshakePayload()
+
+  // TLS Configuration Examples
+  console.log("\n=== TLS Configuration Examples ===\n")
+
+  // Example 7: TLS with system CAs
+  console.log("--- Example 7: Default TLS ---")
+  showDefaultTls()
+
+  // Example 8: Custom root CA
+  console.log("\n--- Example 8: Custom Root CA ---")
+  showCustomRootCa()
+
+  // Example 9: Mutual TLS (mTLS)
+  console.log("\n--- Example 9: Mutual TLS (mTLS) ---")
+  showMtls()
 }
 
 async function withNoAuth(): Promise<void> {
@@ -205,6 +220,65 @@ async function withRawHandshakePayload(): Promise<void> {
     console.log("  Custom handshake failed (expected if server doesn't support it)")
     console.log("  Error:", error instanceof Error ? error.message : error)
   }
+}
+
+// =============================================================================
+// TLS Configuration Functions
+// =============================================================================
+
+function showDefaultTls(): void {
+  // When connecting to a server with a certificate signed by a public CA,
+  // TLS works out of the box - no configuration needed
+  console.log("  Code example:")
+  console.log("")
+  console.log("  const client = await createFlightClient({")
+  console.log('    host: "flight.example.com",')
+  console.log("    port: 443")
+  console.log("    // tls: true is the default")
+  console.log("  })")
+  console.log("")
+  console.log("  // The system's default CA bundle is used for verification")
+}
+
+function showCustomRootCa(): void {
+  // For servers with certificates signed by internal/private CAs,
+  // provide the root CA certificate
+  console.log("  Code example:")
+  console.log("")
+  console.log('  import fs from "fs"')
+  console.log("")
+  console.log("  const client = await createFlightClient({")
+  console.log('    host: "flight.internal.company.com",')
+  console.log("    port: 8815,")
+  console.log("    tls: {")
+  console.log("      // Provide your organization's root CA")
+  console.log('      rootCerts: fs.readFileSync("/path/to/ca.crt")')
+  console.log("    }")
+  console.log("  })")
+  console.log("")
+  console.log("  // Alternatively, pass as a string:")
+  console.log("  // rootCerts: `-----BEGIN CERTIFICATE-----\\n...`")
+}
+
+function showMtls(): void {
+  // Mutual TLS requires both client certificate and private key
+  // The server verifies the client's identity
+  console.log("  Code example:")
+  console.log("")
+  console.log('  import fs from "fs"')
+  console.log("")
+  console.log("  const client = await createFlightClient({")
+  console.log('    host: "flight.secure.example.com",')
+  console.log("    port: 443,")
+  console.log("    tls: {")
+  console.log('      rootCerts: fs.readFileSync("ca.crt"),')
+  console.log('      certChain: fs.readFileSync("client.crt"),')
+  console.log('      privateKey: fs.readFileSync("client.key")')
+  console.log("    }")
+  console.log("  })")
+  console.log("")
+  console.log("  // Or using the auth.mtls shorthand:")
+  console.log("  // auth: { type: 'mtls', cert, key, ca }")
 }
 
 main().catch(console.error)

@@ -3,6 +3,7 @@
  *
  * Demonstrates retrieving flight information, schema, and data
  * from a Flight server using getFlightInfo, getSchema, and doGet.
+ * Also covers call options (timeouts, headers) and cancellation.
  *
  * @example
  * ```bash
@@ -46,6 +47,14 @@ async function main(): Promise<void> {
     // Example 5: Working with locations
     console.log("\n--- Example 5: Location Utilities ---")
     demonstrateLocationUtilities()
+
+    // Example 6: Call options (timeouts, headers)
+    console.log("\n--- Example 6: Call Options ---")
+    await withCallOptions(client)
+
+    // Example 7: Stream cancellation
+    console.log("\n--- Example 7: Stream Cancellation ---")
+    await streamCancellation(client)
   } finally {
     client.close()
     console.log("\nConnection closed")
@@ -203,6 +212,80 @@ function demonstrateLocationUtilities(): void {
   const unixLocation = createLocation("grpc+unix", "/var/run/flight.sock")
   console.log("\n  Unix socket location:")
   console.log(`    URI: ${unixLocation.uri}`)
+}
+
+async function withCallOptions(
+  client: Awaited<ReturnType<typeof createFlightClient>>
+): Promise<void> {
+  // Timeout: Set a deadline for the request
+  try {
+    const info = await client.getFlightInfo(pathDescriptor("my", "dataset"), {
+      timeoutMs: 5000 // 5 second timeout
+    })
+
+    console.log("  Request completed within timeout")
+    console.log("  Total records:", String(info.totalRecords))
+  } catch (error) {
+    console.log("  Request failed (may be timeout or not found)")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
+
+  // Custom headers: Add metadata to requests
+  try {
+    const requestId = crypto.randomUUID()
+
+    const info = await client.getFlightInfo(pathDescriptor("my", "dataset"), {
+      timeoutMs: 10000,
+      headers: {
+        "x-request-id": requestId,
+        "x-api-key": "your-api-key",
+        "x-tenant-id": "tenant-123"
+      }
+    })
+
+    console.log("  Request with headers completed")
+    console.log(`  Request ID: ${requestId}`)
+    console.log(`  Endpoints: ${String(info.endpoint.length)}`)
+  } catch (error) {
+    console.log("  Request failed")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
+}
+
+async function streamCancellation(
+  client: Awaited<ReturnType<typeof createFlightClient>>
+): Promise<void> {
+  try {
+    const descriptor = pathDescriptor("large", "dataset")
+    const info = await client.getFlightInfo(descriptor)
+
+    if (info.endpoint.length === 0 || info.endpoint[0].ticket === undefined) {
+      console.log("  No data available")
+      return
+    }
+
+    const { ticket } = info.endpoint[0]
+    let batchCount = 0
+    const maxBatches = 5
+
+    // Process limited batches then cancel
+    for await (const data of client.doGet(ticket)) {
+      batchCount++
+      console.log(`  Batch ${String(batchCount)}: ${String(data.dataBody.length)} bytes`)
+
+      if (batchCount >= maxBatches) {
+        console.log(`  Stopping after ${String(maxBatches)} batches (breaking stream)...`)
+        break // Breaking exits the async iterator, cleaning up resources
+      }
+    }
+
+    // For explicit cancellation of FlightInfo:
+    // const status = await client.cancelFlightInfo(info)
+    // console.log(`  Cancel status: ${status}`)
+  } catch (error) {
+    console.log("  Operation failed")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
 }
 
 main().catch(console.error)
