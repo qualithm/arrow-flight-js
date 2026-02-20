@@ -138,6 +138,62 @@ describe("FlightClient", () => {
       }
     })
   })
+
+  describe("listFlights", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        for await (const _ of client.listFlights()) {
+          expect.unreachable("should not yield any values")
+        }
+        expect.unreachable("expected listFlights to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
+
+  describe("getFlightInfo", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        await client.getFlightInfo({ type: "path", path: ["test"] })
+        expect.unreachable("expected getFlightInfo to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
+
+  describe("getSchema", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        await client.getSchema({ type: "cmd", cmd: Buffer.from("SELECT 1") })
+        expect.unreachable("expected getSchema to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
+
+  describe("doGet", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        for await (const _ of client.doGet({ ticket: Buffer.from("test") })) {
+          expect.unreachable("should not yield any values")
+        }
+        expect.unreachable("expected doGet to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
 })
 
 describe("createFlightClient", () => {

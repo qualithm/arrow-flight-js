@@ -136,10 +136,10 @@ for that).
 
 ### M3: Read Operations
 
-- [ ] Implement `ListFlights`
-- [ ] Implement `GetFlightInfo`
-- [ ] Implement `GetSchema`
-- [ ] Implement `DoGet` with Arrow IPC decoding
+- [x] Implement `ListFlights`
+- [x] Implement `GetFlightInfo`
+- [x] Implement `GetSchema`
+- [x] Implement `DoGet` with Arrow IPC decoding
 
 ### M4: Write Operations
 

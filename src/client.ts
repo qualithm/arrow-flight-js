@@ -7,20 +7,28 @@
 import {
   type ChannelCredentials,
   type ChannelOptions,
+  type ClientReadableStream,
   credentials as grpcCredentials,
   Metadata
 } from "@grpc/grpc-js"
 
 import {
   BasicAuth,
+  type Criteria,
+  type FlightData,
   FlightServiceClient,
-  type HandshakeResponse
+  type HandshakeResponse,
+  type SchemaResult
 } from "./generated/arrow/flight/protocol/Flight.js"
 import {
   type CallOptions,
+  type Descriptor,
   type FlightClientOptions,
   FlightError,
-  type TlsOptions
+  type FlightInfo,
+  type Ticket,
+  type TlsOptions,
+  toFlightDescriptor
 } from "./types.js"
 
 /**
@@ -329,6 +337,202 @@ export class FlightClient {
       })
       stream.end()
     })
+  }
+
+  /**
+   * Lists available flights matching the given criteria.
+   *
+   * This returns an async iterable that yields FlightInfo objects describing
+   * available data streams. The criteria parameter is server-specific and can
+   * be used to filter or limit the results.
+   *
+   * @param criteria - Optional filter criteria (server-specific)
+   * @param callOptions - Optional call-level options
+   * @returns An async iterable of FlightInfo objects
+   * @throws {FlightError} If the operation fails
+   *
+   * @example
+   * ```ts
+   * for await (const info of client.listFlights()) {
+   *   console.log("Flight:", info.flightDescriptor)
+   * }
+   * ```
+   */
+  async *listFlights(
+    criteria?: Criteria,
+    callOptions?: CallOptions
+  ): AsyncGenerator<FlightInfo, void, undefined> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+
+    const request: Criteria = criteria ?? { expression: Buffer.alloc(0) }
+    const stream = grpcClient.listFlights(request, metadata)
+
+    yield* this.streamToAsyncIterable<FlightInfo>(stream)
+  }
+
+  /**
+   * Gets information about a specific flight.
+   *
+   * Returns metadata about a flight including its schema, endpoints for
+   * data retrieval, and size estimates. The descriptor identifies the data
+   * either by path or command.
+   *
+   * @param descriptor - The flight descriptor (path or command)
+   * @param callOptions - Optional call-level options
+   * @returns Information about the flight
+   * @throws {FlightError} If the flight is not found or the operation fails
+   *
+   * @example
+   * ```ts
+   * import { pathDescriptor } from "arrow-flight-js"
+   *
+   * const info = await client.getFlightInfo(pathDescriptor("my", "dataset"))
+   * console.log("Schema:", info.schema)
+   * console.log("Endpoints:", info.endpoint.length)
+   * ```
+   */
+  async getFlightInfo(descriptor: Descriptor, callOptions?: CallOptions): Promise<FlightInfo> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+    const request = toFlightDescriptor(descriptor)
+
+    return new Promise((resolve, reject) => {
+      grpcClient.getFlightInfo(request, metadata, (error, response) => {
+        if (error !== null) {
+          reject(this.wrapError(error))
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  /**
+   * Gets the Arrow schema for a specific flight.
+   *
+   * Returns the schema without endpoint information. This is useful when
+   * you only need the schema and don't need to know where to retrieve the data.
+   *
+   * @param descriptor - The flight descriptor (path or command)
+   * @param callOptions - Optional call-level options
+   * @returns The schema result containing the IPC-encoded schema
+   * @throws {FlightError} If the flight is not found or the operation fails
+   *
+   * @example
+   * ```ts
+   * import { cmdDescriptor } from "arrow-flight-js"
+   *
+   * const result = await client.getSchema(cmdDescriptor(Buffer.from("SELECT 1")))
+   * console.log("Schema bytes:", result.schema.length)
+   * ```
+   */
+  async getSchema(descriptor: Descriptor, callOptions?: CallOptions): Promise<SchemaResult> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+    const request = toFlightDescriptor(descriptor)
+
+    return new Promise((resolve, reject) => {
+      grpcClient.getSchema(request, metadata, (error, response) => {
+        if (error !== null) {
+          reject(this.wrapError(error))
+        } else {
+          resolve(response)
+        }
+      })
+    })
+  }
+
+  /**
+   * Retrieves data for a flight ticket.
+   *
+   * Returns an async iterable that yields FlightData messages containing
+   * Arrow IPC-encoded data. The ticket is obtained from a FlightEndpoint,
+   * which is part of a FlightInfo returned by getFlightInfo() or listFlights().
+   *
+   * @param ticket - The ticket identifying the data stream
+   * @param callOptions - Optional call-level options
+   * @returns An async iterable of FlightData messages
+   * @throws {FlightError} If the ticket is invalid or the operation fails
+   *
+   * @example
+   * ```ts
+   * const info = await client.getFlightInfo(pathDescriptor("my", "data"))
+   * for (const endpoint of info.endpoint) {
+   *   for await (const data of client.doGet(endpoint.ticket!)) {
+   *     console.log("Received:", data.dataBody.length, "bytes")
+   *   }
+   * }
+   * ```
+   */
+  async *doGet(
+    ticket: Ticket,
+    callOptions?: CallOptions
+  ): AsyncGenerator<FlightData, void, undefined> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+
+    const stream = grpcClient.doGet(ticket, metadata)
+
+    yield* this.streamToAsyncIterable<FlightData>(stream)
+  }
+
+  /**
+   * Converts a gRPC readable stream to an async iterable.
+   *
+   * @internal
+   */
+  private async *streamToAsyncIterable<T>(
+    stream: ClientReadableStream<T>
+  ): AsyncGenerator<T, void, undefined> {
+    type QueueItem = { type: "data"; value: T } | { type: "error"; value: Error } | { type: "end" }
+    const queue: QueueItem[] = []
+    let notify: (() => void) | null = null
+
+    const push = (item: QueueItem): void => {
+      queue.push(item)
+      if (notify !== null) {
+        notify()
+        notify = null
+      }
+    }
+
+    stream.on("data", (data: T) => {
+      push({ type: "data", value: data })
+    })
+
+    stream.on("error", (err: Error) => {
+      push({ type: "error", value: this.wrapError(err) })
+    })
+
+    stream.on("end", () => {
+      push({ type: "end" })
+    })
+
+    let done = false
+    while (!done) {
+      while (queue.length === 0) {
+        await new Promise<void>((r) => {
+          notify = r
+        })
+      }
+
+      // Queue is guaranteed to have items after the inner while loop
+      // Use index access and then mutate to avoid non-null assertion
+      const item = queue[0]
+      queue.splice(0, 1)
+
+      switch (item.type) {
+        case "data":
+          yield item.value
+          break
+        case "error":
+          throw item.value
+        case "end":
+          done = true
+          break
+      }
+    }
   }
 
   /**
