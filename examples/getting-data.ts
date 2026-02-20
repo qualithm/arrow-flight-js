@@ -19,6 +19,8 @@ import {
 } from "../src/index.js"
 
 async function main(): Promise<void> {
+  console.log("=== Getting Data Examples ===\n")
+
   const client = await createFlightClient({
     host: "localhost",
     port: 8815,

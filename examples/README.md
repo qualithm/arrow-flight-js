@@ -119,3 +119,17 @@ Browser integration using gRPC-Web (documentation only). Covers:
 - React component example for fetching Arrow data
 - Authentication in browser environments
 - Limitations of gRPC-Web (streaming, performance)
+
+## Configuration
+
+Most examples connect to `localhost:8815` by default. Modify the connection options to match your
+server:
+
+```typescript
+const client = await createFlightClient({
+  host: "your-server.example.com",
+  port: 443,
+  tls: true,
+  auth: { type: "bearer", token: "your-token" }
+})
+```
