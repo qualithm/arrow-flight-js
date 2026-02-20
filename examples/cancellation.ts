@@ -29,8 +29,12 @@ async function main(): Promise<void> {
     console.log("\n--- Example 2: Timeout Cancellation ---")
     await timeoutCancellation(client)
 
-    // Example 3: User-initiated cancellation
-    console.log("\n--- Example 3: User Cancellation Pattern ---")
+    // Example 3: Stream cancellation
+    console.log("\n--- Example 3: Stream Cancellation ---")
+    await streamCancellation(client)
+
+    // Example 4: User-initiated cancellation
+    console.log("\n--- Example 4: User Cancellation Pattern ---")
     userCancellationPattern(client)
   } finally {
     client.close()
@@ -130,6 +134,84 @@ async function timeoutCancellation(
     }
   } catch (error) {
     console.log("  Operation failed")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
+}
+
+async function streamCancellation(
+  client: Awaited<ReturnType<typeof createFlightClient>>
+): Promise<void> {
+  // Cancel an in-progress stream using stream.cancel()
+  // This immediately aborts the stream without waiting for completion
+  const descriptor = pathDescriptor("streaming", "data")
+
+  try {
+    const info = await client.getFlightInfo(descriptor)
+
+    if (info.endpoint.length === 0 || info.endpoint[0].ticket === undefined) {
+      console.log("  No data available")
+      return
+    }
+
+    console.log("  Starting doGet stream...")
+
+    // For demonstration, we'll show the pattern with doPut/doExchange
+    // which have explicit cancel() methods
+    const putStream = client.doPut()
+
+    // Write some data
+    putStream.write({
+      flightDescriptor: {
+        type: 1,
+        path: ["cancelled", "upload"],
+        cmd: Buffer.alloc(0)
+      },
+      dataHeader: Buffer.alloc(0),
+      appMetadata: Buffer.alloc(0),
+      dataBody: Buffer.from("test-data")
+    })
+
+    console.log("  Sent initial data")
+
+    // Cancel the stream before completion
+    // This immediately terminates the stream and releases resources
+    putStream.cancel()
+    console.log("  Stream cancelled via cancel()")
+
+    // After cancel(), the stream is no longer usable
+    // Any pending writes or results are discarded
+
+    console.log("")
+    console.log("  DoExchange example:")
+
+    const exchangeStream = client.doExchange()
+
+    // Send some data
+    exchangeStream.write({
+      flightDescriptor: {
+        type: 2,
+        path: [],
+        cmd: Buffer.from("transform")
+      },
+      dataHeader: Buffer.alloc(0),
+      appMetadata: Buffer.alloc(0),
+      dataBody: Buffer.from("input-data")
+    })
+
+    console.log("  DoExchange: Sent data")
+
+    // Cancel if we don't need the results anymore
+    exchangeStream.cancel()
+    console.log("  DoExchange: Stream cancelled")
+
+    console.log("")
+    console.log("  Use stream.cancel() when:")
+    console.log("  - User aborts the operation")
+    console.log("  - Timeout is reached during streaming")
+    console.log("  - An error in processing means remaining data isn't needed")
+    console.log("  - Application is shutting down")
+  } catch (error) {
+    console.log("  Stream operation failed (expected if server doesn't support it)")
     console.log("  Error:", error instanceof Error ? error.message : error)
   }
 }

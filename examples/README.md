@@ -76,6 +76,7 @@ Secure connections with TLS and mTLS. Demonstrates:
 - Mutual TLS (mTLS) with client certificates
 - Server name override
 - Skipping certificate verification (development only)
+- Custom gRPC credentials for advanced scenarios
 - Insecure connections (development only)
 
 ### [getting-data.ts](getting-data.ts)
@@ -129,6 +130,7 @@ Cancelling running flight operations. Demonstrates:
 
 - Getting flight info for a long-running operation
 - Cancelling with `cancelFlightInfo()`
+- Stream cancellation with `stream.cancel()`
 - Handling cancellation results
 
 ### [call-options.ts](call-options.ts)

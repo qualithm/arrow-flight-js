@@ -9,6 +9,8 @@
  * bun run examples/tls-configuration.ts
  * ```
  */
+import { credentials as grpcCredentials } from "@grpc/grpc-js"
+
 import { createFlightClient } from "../src/index.js"
 
 async function main(): Promise<void> {
@@ -34,8 +36,12 @@ async function main(): Promise<void> {
   console.log("\n--- Example 5: Skip Certificate Verification ---")
   showSkipVerification()
 
-  // Example 6: Insecure connection
-  console.log("\n--- Example 6: Insecure Connection ---")
+  // Example 6: Custom gRPC credentials
+  console.log("\n--- Example 6: Custom gRPC Credentials ---")
+  await showCustomCredentials()
+
+  // Example 7: Insecure connection
+  console.log("\n--- Example 7: Insecure Connection ---")
   await showInsecure()
 }
 
@@ -144,6 +150,55 @@ function showSkipVerification(): void {
   console.log("  // - Local development with self-signed certs")
   console.log("  // - Testing against staging environments")
   console.log("  // NEVER use in production!")
+}
+
+async function showCustomCredentials(): Promise<void> {
+  // For advanced use cases, you can provide custom gRPC credentials directly
+  // This gives full control over the credential configuration
+  console.log("  For advanced scenarios, use the `credentials` option:")
+  console.log("")
+
+  try {
+    // Create custom credentials using @grpc/grpc-js directly
+    // This overrides the `tls` option entirely
+    const customCredentials = grpcCredentials.createInsecure()
+
+    const client = await createFlightClient({
+      host: "localhost",
+      port: 8815,
+      // When credentials is provided, tls option is ignored
+      credentials: customCredentials
+    })
+
+    console.log("  Connected with custom gRPC credentials")
+    console.log("  Address:", client.address)
+
+    client.close()
+    console.log("  Connection closed")
+  } catch (error) {
+    console.log("  Connection failed (expected if no server running)")
+    console.log("  Error:", error instanceof Error ? error.message : error)
+  }
+
+  console.log("")
+  console.log("  More advanced examples:")
+  console.log("")
+  console.log('  import { credentials, ChannelCredentials } from "@grpc/grpc-js"')
+  console.log("")
+  console.log("  // Combine channel credentials with call credentials")
+  console.log("  const channelCreds = credentials.createSsl(caCert, clientKey, clientCert)")
+  console.log("  const callCreds = credentials.createFromMetadataGenerator((params, cb) => {")
+  console.log("    const metadata = new Metadata()")
+  console.log('    metadata.set("authorization", "Bearer " + getToken())')
+  console.log("    cb(null, metadata)")
+  console.log("  })")
+  console.log("  const combined = credentials.combineChannelCredentials(channelCreds, callCreds)")
+  console.log("")
+  console.log("  const client = await createFlightClient({")
+  console.log('    host: "flight.example.com",')
+  console.log("    port: 443,")
+  console.log("    credentials: combined")
+  console.log("  })")
 }
 
 async function showInsecure(): Promise<void> {
