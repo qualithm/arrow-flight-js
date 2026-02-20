@@ -41,17 +41,18 @@ for that).
 
 ### Core Arrow Flight RPC Methods
 
-| Method          | Purpose                                  |
-| --------------- | ---------------------------------------- |
-| `Handshake`     | Authentication handshake                 |
-| `ListFlights`   | List available data streams              |
-| `GetFlightInfo` | Get metadata about a specific flight     |
-| `GetSchema`     | Get the Arrow schema for a flight        |
-| `DoGet`         | Retrieve a data stream (server → client) |
-| `DoPut`         | Upload a data stream (client → server)   |
-| `DoExchange`    | Bidirectional data stream exchange       |
-| `DoAction`      | Execute a custom action, return results  |
-| `ListActions`   | List available custom actions            |
+| Method             | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| `Handshake`        | Authentication handshake                 |
+| `ListFlights`      | List available data streams              |
+| `GetFlightInfo`    | Get metadata about a specific flight     |
+| `GetSchema`        | Get the Arrow schema for a flight        |
+| `DoGet`            | Retrieve a data stream (server → client) |
+| `DoPut`            | Upload a data stream (client → server)   |
+| `DoExchange`       | Bidirectional data stream exchange       |
+| `DoAction`         | Execute a custom action, return results  |
+| `ListActions`      | List available custom actions            |
+| `CancelFlightInfo` | Cancel a running flight operation        |
 
 ---
 
@@ -162,6 +163,11 @@ for that).
 - [ ] Run tests on Deno (unit + integration)
 - [ ] Enable coverage reporting with threshold enforcement
 - [ ] Add test fixtures for Arrow schemas/data
+
+### M7: Additional Flight Operations
+
+- [ ] Implement `cancelFlightInfo` method (CancelFlightInfo action) — needed by arrow-flight-sql-js
+- [ ] Export `CancelFlightInfoRequest` / `CancelFlightInfoResult` encoders from generated proto
 
 ---
 
