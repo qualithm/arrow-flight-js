@@ -33,9 +33,11 @@ for that).
 
 ### Modules
 
-| Module     | Purpose          |
-| ---------- | ---------------- |
-| `index.ts` | Main entry point |
+| Module      | Purpose                         |
+| ----------- | ------------------------------- |
+| `index.ts`  | Main entry point                |
+| `types.ts`  | Flight protocol types           |
+| `client.ts` | FlightClient connection manager |
 
 ### Core Arrow Flight RPC Methods
 
@@ -127,10 +129,10 @@ for that).
 
 ### M2: Core Types & Connection
 
-- [ ] Define TypeScript types for Flight protocol
-- [ ] Implement `FlightClient` connection management
-- [ ] Implement `Handshake` for authentication
-- [ ] Add TLS configuration support
+- [x] Define TypeScript types for Flight protocol
+- [x] Implement `FlightClient` connection management
+- [x] Implement `Handshake` for authentication
+- [x] Add TLS configuration support
 
 ### M3: Read Operations
 
