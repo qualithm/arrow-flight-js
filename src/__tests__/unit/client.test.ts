@@ -208,6 +208,36 @@ describe("FlightClient", () => {
       expect(() => client.doExchange()).toThrow("client is not connected")
     })
   })
+
+  describe("doAction", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        for await (const _ of client.doAction({ type: "test", body: Buffer.alloc(0) })) {
+          expect.unreachable("should not yield any values")
+        }
+        expect.unreachable("expected doAction to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
+
+  describe("listActions", () => {
+    it("throws when client is not connected", async () => {
+      const client = new FlightClient({ host: "localhost" })
+      try {
+        for await (const _ of client.listActions()) {
+          expect.unreachable("should not yield any values")
+        }
+        expect.unreachable("expected listActions to throw")
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe("client is not connected")
+      }
+    })
+  })
 })
 
 describe("createFlightClient", () => {

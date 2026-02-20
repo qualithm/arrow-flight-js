@@ -14,12 +14,16 @@ import {
 } from "@grpc/grpc-js"
 
 import {
+  type Action,
+  type ActionType,
   BasicAuth,
   type Criteria,
+  Empty,
   type FlightData,
   FlightServiceClient,
   type HandshakeResponse,
   type PutResult,
+  type Result,
   type SchemaResult
 } from "./generated/arrow/flight/protocol/Flight.js"
 import {
@@ -564,6 +568,63 @@ export class FlightClient {
     const grpcStream = grpcClient.doExchange(metadata)
 
     return new DoExchangeStream(grpcStream, (err) => this.wrapError(err))
+  }
+
+  /**
+   * Executes a custom action on the Flight server.
+   *
+   * Actions are server-specific operations that don't fit into the standard
+   * Flight RPC methods. The action type and body are application-defined.
+   *
+   * @param action - The action to execute (type and body)
+   * @param callOptions - Optional call-level options
+   * @returns An async iterable of Result messages
+   * @throws {FlightError} If the action fails
+   *
+   * @example
+   * ```ts
+   * const action = { type: "clear-cache", body: Buffer.alloc(0) }
+   * for await (const result of client.doAction(action)) {
+   *   console.log("Result:", result.body.toString())
+   * }
+   * ```
+   */
+  async *doAction(
+    action: Action,
+    callOptions?: CallOptions
+  ): AsyncGenerator<Result, void, undefined> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+
+    const stream = grpcClient.doAction(action, metadata)
+
+    yield* this.streamToAsyncIterable<Result>(stream)
+  }
+
+  /**
+   * Lists available actions supported by the Flight server.
+   *
+   * Returns metadata about each action including its type identifier
+   * and a human-readable description.
+   *
+   * @param callOptions - Optional call-level options
+   * @returns An async iterable of ActionType descriptions
+   * @throws {FlightError} If the operation fails
+   *
+   * @example
+   * ```ts
+   * for await (const actionType of client.listActions()) {
+   *   console.log(`${actionType.type}: ${actionType.description}`)
+   * }
+   * ```
+   */
+  async *listActions(callOptions?: CallOptions): AsyncGenerator<ActionType, void, undefined> {
+    const grpcClient = this.getGrpcClient()
+    const metadata = this.createMetadata(callOptions)
+
+    const stream = grpcClient.listActions(Empty, metadata)
+
+    yield* this.streamToAsyncIterable<ActionType>(stream)
   }
 
   /**

@@ -148,8 +148,8 @@ for that).
 
 ### M5: Actions & Polish
 
-- [ ] Implement `DoAction`
-- [ ] Implement `ListActions`
+- [x] Implement `DoAction`
+- [x] Implement `ListActions`
 - [ ] Add comprehensive error handling
 - [ ] Documentation and examples
 
