@@ -26,6 +26,7 @@ for that).
 | Language  | TypeScript (ESM-only) |
 | Runtime   | Bun, Node.js 20+      |
 | Build     | TypeScript compiler   |
+| Proto     | ts-proto + grpc-tools |
 | Test      | Bun test runner       |
 | Lint      | ESLint, Prettier      |
 | Docs      | TypeDoc               |
@@ -83,6 +84,8 @@ for that).
 7. **Browser support: gRPC-Web** — Requires Envoy proxy, widely supported by Flight servers
 8. **Authentication: All patterns** — Bearer tokens, mTLS, and Flight Handshake for maximum
    compatibility
+9. **Proto handling: Vendored** — Flight.proto from apache/arrow vendored in `proto/` for
+   reproducible builds; compiled with ts-proto
 
 ---
 
@@ -118,9 +121,9 @@ for that).
 ### M1: Project Setup
 
 - [x] Update package.json with correct name/description
-- [ ] Define proto file handling strategy
-- [ ] Add core dependencies (`apache-arrow`, gRPC library)
-- [ ] Set up proto compilation pipeline
+- [x] Define proto file handling strategy
+- [x] Set up proto compilation pipeline
+- [x] Add core dependencies (`apache-arrow`)
 
 ### M2: Core Types & Connection
 
