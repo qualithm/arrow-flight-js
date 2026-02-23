@@ -221,18 +221,18 @@ export class FlightClient {
   createMetadata(callOptions?: CallOptions): Metadata {
     const metadata = new Metadata()
 
-    // Add bearer token if set
+    // Add bearer token if set (takes precedence over configured auth)
     if (this._bearerToken !== null) {
       metadata.set("authorization", `Bearer ${this._bearerToken}`)
-    }
-
-    // Add basic auth if configured
-    const { auth } = this.options
-    if (auth?.type === "basic") {
-      const encoded = Buffer.from(`${auth.username}:${auth.password}`).toString("base64")
-      metadata.set("authorization", `Basic ${encoded}`)
-    } else if (auth?.type === "bearer") {
-      metadata.set("authorization", `Bearer ${auth.token}`)
+    } else {
+      // Add configured auth only if no bearer token is set
+      const { auth } = this.options
+      if (auth?.type === "basic") {
+        const encoded = Buffer.from(`${auth.username}:${auth.password}`).toString("base64")
+        metadata.set("authorization", `Basic ${encoded}`)
+      } else if (auth?.type === "bearer") {
+        metadata.set("authorization", `Bearer ${auth.token}`)
+      }
     }
 
     // Add custom headers from call options

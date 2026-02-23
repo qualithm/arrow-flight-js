@@ -78,3 +78,6 @@ export {
   CancelFlightInfoRequest as CancelFlightInfoRequestCodec,
   CancelFlightInfoResult as CancelFlightInfoResultCodec
 } from "./generated/arrow/flight/protocol/Flight.js"
+
+// IPC utilities for converting Flight data to Arrow IPC format
+export { collectFlightDataAsIpc, flightDataToIpc } from "./ipc.js"

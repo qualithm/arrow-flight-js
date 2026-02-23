@@ -104,7 +104,7 @@ describe("Actions Integration", () => {
       }
     })
 
-    it("returns NOT_FOUND for unknown action", async () => {
+    it("returns INVALID_ARGUMENT for unknown action", async () => {
       try {
         for await (const _ of client.doAction({
           type: "unknown-action",
@@ -112,9 +112,9 @@ describe("Actions Integration", () => {
         })) {
           // Should not reach here
         }
-        expect.unreachable("Expected NOT_FOUND error")
+        expect.unreachable("Expected INVALID_ARGUMENT error")
       } catch (error) {
-        expect((error as { code: string }).code).toBe("NOT_FOUND")
+        expect((error as { code: string }).code).toBe("INVALID_ARGUMENT")
       }
     })
   })
