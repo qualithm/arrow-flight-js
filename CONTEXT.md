@@ -156,13 +156,13 @@ for that).
 
 ### M6: Testing Infrastructure
 
-- [ ] Add test connection configuration for Arrow Flight server
-- [ ] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
+- [x] Add test connection configuration for Arrow Flight server
+- [x] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
 - [ ] Run tests on Bun (unit + integration)
 - [ ] Run tests on Node.js (unit + integration)
 - [ ] Run tests on Deno (unit + integration)
 - [ ] Enable coverage reporting with threshold enforcement
-- [ ] Add test fixtures for Arrow schemas/data
+- [x] Add test fixtures for Arrow schemas/data (uses test server fixtures)
 
 ### M7: Additional Flight Operations
 
@@ -175,6 +175,7 @@ for that).
 
 > Append-only. Never edit or delete existing entries.
 
-| Date       | Learning                                                                                                                                    |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics |
+| Date       | Learning                                                                                                                                        |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics     |
+| 2026-02-23 | Integration tests target Arrow Flight server; config via env vars FLIGHT_HOST/FLIGHT_PORT; tests cover connection, flights, data, actions, auth |
