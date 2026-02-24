@@ -1,6 +1,6 @@
 {
   "name": "@qualithm/arrow-flight-js",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Arrow Flight client for JavaScript and TypeScript runtimes.",
   "private": false,
   "type": "module",
