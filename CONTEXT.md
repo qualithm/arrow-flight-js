@@ -15,6 +15,14 @@ Provides a high-performance transport layer for Apache Arrow data streams using 
 **base protocol** library—it does NOT include SQL-specific functionality (see `arrow-flight-sql-js`
 for that).
 
+**Key capabilities:**
+
+- All core Flight RPC methods (Handshake, ListFlights, GetFlightInfo, GetSchema, DoGet, DoPut,
+  DoExchange, DoAction, ListActions)
+- Connection management and authentication (Bearer tokens, mTLS, Flight Handshake)
+- Arrow IPC stream encoding/decoding
+- Support for Bun, Node.js, and browser runtimes
+
 ---
 
 ## Current Reality
@@ -103,19 +111,22 @@ for that).
 
 | ID  | Risk                        | Impact | Mitigation                            |
 | --- | --------------------------- | ------ | ------------------------------------- |
-| R1  | gRPC in browsers is complex | High   | Consider Connect protocol as fallback |
-| R2  | Large bundle size           | Medium | Tree-shaking, optional heavy deps     |
+| R-1 | gRPC in browsers is complex | High   | Consider Connect protocol as fallback |
+| R-2 | Large bundle size           | Medium | Tree-shaking, optional heavy deps     |
 
 ---
 
 ## Work In Flight
 
+> Claim work before starting. Include start timestamp. Remove within 24 hours of completion.
+
 | ID  | Agent | Started | Task | Files |
 | --- | ----- | ------- | ---- | ----- |
+| —   | —     | —       | None | —     |
 
 ---
 
-## Next Milestones
+## Work Queue
 
 ### Coverage & Documentation
 
