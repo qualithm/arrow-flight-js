@@ -869,3 +869,417 @@ describe("TLS verifyServerCert callback coverage", () => {
     client.close()
   })
 })
+
+describe("handshake bearer token from authorization header", () => {
+  let client: FlightClient
+
+  beforeEach(async () => {
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+    await client.connect()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("extracts token from bearer authorization header", async () => {
+    client.clearBearerToken()
+
+    const mockHandshakeStream = new EventEmitter()
+    const mockMetadata = {
+      get: (key: string) => {
+        if (key === "authorization") {
+          return ["Bearer my-extracted-token"]
+        }
+        if (key === "auth-token-bin") {
+          return []
+        }
+        return []
+      }
+    }
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.handshake = vi.fn(() => {
+      setTimeout(() => {
+        mockHandshakeStream.emit("metadata", mockMetadata)
+        mockHandshakeStream.emit("data", { protocolVersion: 0, payload: Buffer.alloc(0) })
+        mockHandshakeStream.emit("end")
+      }, 5)
+      return Object.assign(mockHandshakeStream, {
+        write: vi.fn(),
+        end: vi.fn()
+      })
+    })
+
+    const result = await client.handshake()
+    expect(result).toBeDefined()
+    expect(result.token).toBe("my-extracted-token")
+    expect(client.getBearerToken()).toBe("my-extracted-token")
+  })
+})
+
+describe("handshake error and no-response cases", () => {
+  let client: FlightClient
+
+  beforeEach(async () => {
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+    await client.connect()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("rejects when handshake stream errors", async () => {
+    const mockHandshakeStream = new EventEmitter()
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.handshake = vi.fn(() => {
+      setTimeout(() => {
+        mockHandshakeStream.emit("error", new Error("connection failed"))
+      }, 5)
+      return Object.assign(mockHandshakeStream, {
+        write: vi.fn(),
+        end: vi.fn()
+      })
+    })
+
+    await expect(client.handshake()).rejects.toThrow("connection failed")
+  })
+
+  it("rejects when no handshake response received", async () => {
+    const mockHandshakeStream = new EventEmitter()
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.handshake = vi.fn(() => {
+      setTimeout(() => {
+        // Emit "end" without any "data"
+        mockHandshakeStream.emit("end")
+      }, 5)
+      return Object.assign(mockHandshakeStream, {
+        write: vi.fn(),
+        end: vi.fn()
+      })
+    })
+
+    await expect(client.handshake()).rejects.toThrow("no handshake response received")
+  })
+})
+
+describe("getFlightInfo and getSchema coverage", () => {
+  let client: FlightClient
+
+  beforeEach(async () => {
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+    await client.connect()
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("calls getFlightInfo and resolves with response", async () => {
+    const mockResponse = {
+      schema: Buffer.from("schema"),
+      flightDescriptor: { type: 1, path: ["test"], cmd: Buffer.alloc(0) },
+      endpoint: [],
+      totalRecords: 100,
+      totalBytes: 1000,
+      ordered: false,
+      appMetadata: Buffer.alloc(0)
+    }
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.getFlightInfo = vi.fn(
+      (
+        _request: unknown,
+        _metadata: unknown,
+        callback: (err: Error | null, res: unknown) => void
+      ) => {
+        callback(null, mockResponse)
+      }
+    )
+
+    const result = await client.getFlightInfo({ type: "path", path: ["test"] })
+    expect(result).toEqual(mockResponse)
+  })
+
+  it("calls getFlightInfo and rejects on error", async () => {
+    // @ts-expect-error accessing private property
+    client.grpcClient.getFlightInfo = vi.fn(
+      (
+        _request: unknown,
+        _metadata: unknown,
+        callback: (err: Error | null, res: unknown) => void
+      ) => {
+        callback(new Error("flight not found"), null)
+      }
+    )
+
+    await expect(client.getFlightInfo({ type: "path", path: ["missing"] })).rejects.toThrow(
+      "flight not found"
+    )
+  })
+
+  it("calls getSchema and resolves with response", async () => {
+    const mockResponse = {
+      schema: Buffer.from("schema-bytes")
+    }
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.getSchema = vi.fn(
+      (
+        _request: unknown,
+        _metadata: unknown,
+        callback: (err: Error | null, res: unknown) => void
+      ) => {
+        callback(null, mockResponse)
+      }
+    )
+
+    const result = await client.getSchema({ type: "cmd", cmd: Buffer.from("SELECT 1") })
+    expect(result).toEqual(mockResponse)
+  })
+
+  it("calls getSchema and rejects on error", async () => {
+    // @ts-expect-error accessing private property
+    client.grpcClient.getSchema = vi.fn(
+      (
+        _request: unknown,
+        _metadata: unknown,
+        callback: (err: Error | null, res: unknown) => void
+      ) => {
+        callback(new Error("schema error"), null)
+      }
+    )
+
+    await expect(client.getSchema({ type: "path", path: ["missing"] })).rejects.toThrow(
+      "schema error"
+    )
+  })
+})
+
+describe("listFlights with criteria coverage", () => {
+  let client: FlightClient
+  let mockStream: EventEmitter
+
+  beforeEach(async () => {
+    mockStream = new EventEmitter()
+
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+    await client.connect()
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.listFlights = vi.fn(() => mockStream)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("calls listFlights with criteria parameter", async () => {
+    const criteria = { expression: Buffer.from("filter") }
+
+    setTimeout(() => {
+      mockStream.emit("data", {
+        schema: Buffer.alloc(0),
+        flightDescriptor: { type: 1, path: ["flight1"], cmd: Buffer.alloc(0) },
+        endpoint: [],
+        totalRecords: 0,
+        totalBytes: 0,
+        ordered: false,
+        appMetadata: Buffer.alloc(0)
+      })
+      mockStream.emit("end")
+    }, 5)
+
+    const results = []
+    for await (const info of client.listFlights(criteria)) {
+      results.push(info)
+    }
+
+    expect(results).toHaveLength(1)
+  })
+
+  it("calls listFlights without criteria (uses default)", async () => {
+    setTimeout(() => {
+      mockStream.emit("data", {
+        schema: Buffer.alloc(0),
+        flightDescriptor: { type: 1, path: ["flight2"], cmd: Buffer.alloc(0) },
+        endpoint: [],
+        totalRecords: 0,
+        totalBytes: 0,
+        ordered: false,
+        appMetadata: Buffer.alloc(0)
+      })
+      mockStream.emit("end")
+    }, 5)
+
+    const results = []
+    for await (const info of client.listFlights()) {
+      results.push(info)
+    }
+
+    expect(results).toHaveLength(1)
+  })
+})
+
+describe("doGet and streamToAsyncIterable coverage", () => {
+  let client: FlightClient
+  let mockStream: EventEmitter
+
+  beforeEach(async () => {
+    mockStream = new EventEmitter()
+
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+    await client.connect()
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.doGet = vi.fn(() => mockStream)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("iterates doGet results via streamToAsyncIterable", async () => {
+    const ticket = { ticket: Buffer.from("test-ticket") }
+
+    setTimeout(() => {
+      mockStream.emit("data", {
+        flightDescriptor: undefined,
+        dataHeader: Buffer.from("header1"),
+        dataBody: Buffer.from("body1"),
+        appMetadata: Buffer.alloc(0)
+      })
+      mockStream.emit("data", {
+        flightDescriptor: undefined,
+        dataHeader: Buffer.from("header2"),
+        dataBody: Buffer.from("body2"),
+        appMetadata: Buffer.alloc(0)
+      })
+      mockStream.emit("end")
+    }, 5)
+
+    const results = []
+    for await (const data of client.doGet(ticket)) {
+      results.push(data)
+    }
+
+    expect(results).toHaveLength(2)
+  })
+
+  it("handles error in doGet stream", async () => {
+    const ticket = { ticket: Buffer.from("test-ticket") }
+
+    setTimeout(() => {
+      mockStream.emit("error", new Error("stream failed"))
+    }, 5)
+
+    const results = []
+    await expect(async () => {
+      for await (const data of client.doGet(ticket)) {
+        results.push(data)
+      }
+    }).rejects.toThrow("stream failed")
+  })
+})
+
+describe("basic auth payload coverage", () => {
+  beforeEach(() => {
+    credentialCalls.createInsecure = 0
+    credentialCalls.createSsl = 0
+  })
+
+  it("builds BasicAuth payload for basic auth type", async () => {
+    const client = new FlightClient({
+      host: "localhost",
+      port: 8815,
+      tls: false,
+      auth: {
+        type: "basic",
+        username: "testuser",
+        password: "testpass"
+      }
+    })
+
+    await client.connect()
+
+    // Mock handshake to capture the write call
+    const mockHandshakeStream = new EventEmitter()
+    let writtenPayload: Buffer | undefined
+
+    // @ts-expect-error accessing private property
+    client.grpcClient.handshake = vi.fn(() => {
+      setTimeout(() => {
+        mockHandshakeStream.emit("data", { protocolVersion: 0, payload: Buffer.alloc(0) })
+        mockHandshakeStream.emit("end")
+      }, 5)
+      return Object.assign(mockHandshakeStream, {
+        write: vi.fn((data: { payload: Buffer }) => {
+          writtenPayload = data.payload
+        }),
+        end: vi.fn()
+      })
+    })
+
+    await client.handshake()
+
+    // Verify payload was written and contains encoded BasicAuth
+    expect(writtenPayload).toBeDefined()
+    expect(writtenPayload?.length).toBeGreaterThan(0)
+  })
+})
+
+describe("DoExchangeStream cancel coverage", () => {
+  let client: FlightClient
+  let mockStream: EventEmitter & {
+    write: ReturnType<typeof vi.fn>
+    end: ReturnType<typeof vi.fn>
+    cancel: ReturnType<typeof vi.fn>
+  }
+
+  beforeEach(() => {
+    mockStream = Object.assign(new EventEmitter(), {
+      write: vi.fn(() => true),
+      end: vi.fn(),
+      cancel: vi.fn()
+    })
+
+    client = new FlightClient({ host: "localhost", port: 8815, tls: false })
+
+    const mockGrpcClient = {
+      doExchange: vi.fn(() => mockStream),
+      waitForReady: vi.fn((_, cb) => cb())
+    }
+    // @ts-expect-error accessing private property for testing
+    client.grpcClient = mockGrpcClient
+    // @ts-expect-error accessing private property for testing
+    client._state = "connected"
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("calls cancel on DoExchangeStream", () => {
+    const exchangeStream = client.doExchange()
+    exchangeStream.cancel()
+    expect(mockStream.cancel).toHaveBeenCalled()
+  })
+})
+
+describe("createFlightClient factory function", () => {
+  it("returns connected client", async () => {
+    const { createFlightClient } = await import("../../client")
+
+    const client = await createFlightClient({
+      host: "localhost",
+      port: 8815,
+      tls: false
+    })
+
+    expect(client).toBeInstanceOf(FlightClient)
+    expect(client.isConnected).toBe(true)
+  })
+})
