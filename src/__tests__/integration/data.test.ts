@@ -56,7 +56,7 @@ describe("Data Operations Integration", () => {
       // Parse as Arrow table
       const table = tableFromIPC(ipcBytes)
       // Row count should match what FlightInfo reported
-      expect(table.numRows).toBe(Number(info.totalRecords))
+      expect(table.numRows).toBe(info.totalRecords)
       // Schema should have id and value columns
       expect(table.schema.fields.map((f) => f.name)).toContain("id")
       expect(table.schema.fields.map((f) => f.name)).toContain("value")
