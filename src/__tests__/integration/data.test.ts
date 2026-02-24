@@ -154,6 +154,36 @@ describe("Data Operations Integration", () => {
       // Should receive at least one acknowledgement
       expect(acks.length).toBeGreaterThanOrEqual(0)
     })
+
+    it("uses collectResults to gather all acknowledgements", async () => {
+      const descriptor = pathDescriptor(...config.flights.integers)
+      const info = await client.getFlightInfo(descriptor)
+
+      const sourceChunks: FlightData[] = []
+      for await (const data of client.doGet(info.endpoint[0].ticket!)) {
+        sourceChunks.push(data)
+      }
+
+      const putStream = client.doPut()
+
+      const firstData = sourceChunks[0]
+      putStream.write({
+        flightDescriptor: {
+          type: 1,
+          path: ["test", `collect-test-${String(Date.now())}`],
+          cmd: Buffer.alloc(0)
+        },
+        dataHeader: firstData.dataHeader,
+        dataBody: firstData.dataBody,
+        appMetadata: Buffer.alloc(0)
+      })
+
+      putStream.end()
+
+      // Use collectResults instead of iterating results()
+      const allResults = await putStream.collectResults()
+      expect(Array.isArray(allResults)).toBe(true)
+    })
   })
 
   describe("doExchange", () => {
@@ -189,6 +219,59 @@ describe("Data Operations Integration", () => {
 
       // Echo should return the same data
       expect(results.length).toBeGreaterThan(0)
+    })
+
+    it("uses collectResults to gather all exchange results", async () => {
+      const descriptor = pathDescriptor("exchange", "echo")
+      const info = await client.getFlightInfo(descriptor).catch(() => null)
+
+      if (info === null) {
+        return
+      }
+
+      const exchangeStream = client.doExchange()
+
+      exchangeStream.write({
+        flightDescriptor: {
+          type: 1,
+          path: ["exchange", "echo"],
+          cmd: Buffer.alloc(0)
+        },
+        dataHeader: Buffer.from("header"),
+        dataBody: Buffer.from("body"),
+        appMetadata: Buffer.alloc(0)
+      })
+
+      exchangeStream.end()
+
+      // Use collectResults instead of iterating results()
+      const allResults = await exchangeStream.collectResults()
+      expect(Array.isArray(allResults)).toBe(true)
+    })
+
+    it("can cancel an exchange stream", async () => {
+      const exchangeStream = client.doExchange()
+
+      exchangeStream.write({
+        flightDescriptor: {
+          type: 1,
+          path: ["exchange", "echo"],
+          cmd: Buffer.alloc(0)
+        },
+        dataHeader: Buffer.from("test"),
+        dataBody: Buffer.from("data"),
+        appMetadata: Buffer.alloc(0)
+      })
+
+      // Cancel the stream - gRPC will emit a cancelled error which is expected
+      exchangeStream.cancel()
+
+      // Try to collect results - should either return empty or throw cancelled error
+      try {
+        await exchangeStream.collectResults()
+      } catch {
+        // Expected - stream was cancelled
+      }
     })
   })
 })

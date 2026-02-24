@@ -128,11 +128,7 @@ for that).
 
 ## Work Queue
 
-### Coverage & Documentation
-
-- [ ] Run `test:coverage`, verify 80% threshold
-- [ ] Fix coverage gaps if below threshold
-- [ ] Review and enhance TypeDoc output
+> No items currently queued.
 
 ---
 
@@ -140,7 +136,11 @@ for that).
 
 > Append-only. Never edit or delete existing entries.
 
-| Date       | Learning                                                                                                                                        |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics     |
-| 2026-02-23 | Integration tests target Arrow Flight server; config via env vars FLIGHT_HOST/FLIGHT_PORT; tests cover connection, flights, data, actions, auth |
+| Date       | Learning                                                                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics                                                          |
+| 2026-02-23 | Integration tests target Arrow Flight server; config via env vars FLIGHT_HOST/FLIGHT_PORT; tests cover connection, flights, data, actions, auth                                                      |
+| 2026-02-24 | Branch coverage improved from 70% to 84% by adding unit tests for channel options (keepalive, message limits), TLS credential variants (string/Buffer), and mTLS auth paths                          |
+| 2026-02-24 | Mock tests for DoExchangeStream/DoPutStream error handling: vi.mock @grpc/grpc-js, mock grpcClient property, use EventEmitter for stream events. FlightError takes Buffer metadata from gRPC errors. |
+| 2026-02-24 | Achieved 100% branch/line coverage: auth-token-bin handling has 3 branches (string, Buffer, other); TLS options need Buffer variant tests; keepalivePermitWithoutCalls needs false test.             |
+| 2026-02-24 | Achieved 100%/100%/100%/100% coverage: Final gap was checkServerIdentity callback at line 816 - must call connect() to trigger buildCredentials(), then capture verifyOptions via vi.hoisted mock.   |
