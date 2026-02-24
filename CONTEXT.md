@@ -136,11 +136,9 @@ for that).
 
 > Append-only. Never edit or delete existing entries.
 
-| Date       | Learning                                                                                                                                                                                             |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics                                                          |
-| 2026-02-23 | Integration tests target Arrow Flight server; config via env vars FLIGHT_HOST/FLIGHT_PORT; tests cover connection, flights, data, actions, auth                                                      |
-| 2026-02-24 | Branch coverage improved from 70% to 84% by adding unit tests for channel options (keepalive, message limits), TLS credential variants (string/Buffer), and mTLS auth paths                          |
-| 2026-02-24 | Mock tests for DoExchangeStream/DoPutStream error handling: vi.mock @grpc/grpc-js, mock grpcClient property, use EventEmitter for stream events. FlightError takes Buffer metadata from gRPC errors. |
-| 2026-02-24 | Achieved 100% branch/line coverage: auth-token-bin handling has 3 branches (string, Buffer, other); TLS options need Buffer variant tests; keepalivePermitWithoutCalls needs false test.             |
-| 2026-02-24 | Achieved 100%/100%/100%/100% coverage: Final gap was checkServerIdentity callback at line 816 - must call connect() to trigger buildCredentials(), then capture verifyOptions via vi.hoisted mock.   |
+| Date       | Learning                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2025-07-18 | FlightError constructor takes `(message, code)` not `(code, message)` — message first for compatibility with standard Error class semantics          |
+| 2026-02-24 | FlightError accepts Buffer metadata from gRPC errors (not just strings) — check for Buffer type when extracting error details                        |
+| 2026-02-24 | Mock gRPC streams using EventEmitter + vi.mock on grpcClient property — enables testing stream error handling without real server                    |
+| 2026-02-24 | To test checkServerIdentity callback: use vi.hoisted to capture verifyOptions before module loads, then call connect() to trigger buildCredentials() |
