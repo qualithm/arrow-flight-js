@@ -10,6 +10,7 @@ protocol** library—for SQL functionality, see
 
 - Full Arrow Flight protocol support (all RPC methods)
 - TypeScript-first with comprehensive type definitions
+- Cross-runtime: Bun, Node.js 20+, Deno
 - Streaming support with async iterables
 - Multiple authentication methods (Basic, Bearer, mTLS, Handshake)
 - TLS/mTLS configuration
@@ -118,7 +119,7 @@ See the [examples](./examples) directory for complete, runnable demonstrations.
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (recommended) or Node.js 20+
+- [Bun](https://bun.sh/) (recommended), Node.js 20+, or [Deno](https://deno.land/)
 
 ### Setup
 
@@ -140,6 +141,13 @@ bun test
 
 # Integration tests (requires running Arrow Flight server)
 FLIGHT_HOST=localhost FLIGHT_PORT=50051 bun run test:integration
+```
+
+### Benchmarks
+
+```bash
+# Requires running Arrow Flight server
+FLIGHT_HOST=localhost FLIGHT_PORT=50051 bun run bench
 ```
 
 ### Linting & Formatting
