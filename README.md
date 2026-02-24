@@ -1,5 +1,9 @@
 # Arrow Flight JS
 
+[![CI](https://github.com/qualithm/arrow-flight-js/actions/workflows/ci.yaml/badge.svg)](https://github.com/qualithm/arrow-flight-js/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/qualithm/arrow-flight-js/graph/badge.svg)](https://codecov.io/gh/qualithm/arrow-flight-js)
+[![npm](https://img.shields.io/npm/v/@qualithm/arrow-flight-js)](https://www.npmjs.com/package/@qualithm/arrow-flight-js)
+
 Arrow Flight client for JavaScript and TypeScript runtimes.
 
 A high-performance transport layer for Apache Arrow data streams using gRPC. This is the **base
