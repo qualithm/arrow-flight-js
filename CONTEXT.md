@@ -35,9 +35,9 @@ for that).
 
 | Module      | Purpose                         |
 | ----------- | ------------------------------- |
+| `client.ts` | FlightClient connection manager |
 | `index.ts`  | Main entry point                |
 | `types.ts`  | Flight protocol types           |
-| `client.ts` | FlightClient connection manager |
 
 ### Core Arrow Flight RPC Methods
 
@@ -98,7 +98,6 @@ for that).
 
 | ID  | Question | Context |
 | --- | -------- | ------- |
-| —   | None     | —       |
 
 ### Risks
 
@@ -111,63 +110,14 @@ for that).
 
 ## Work In Flight
 
-> Claim work before starting. Include start timestamp. Remove within 24 hours of completion.
-
 | ID  | Agent | Started | Task | Files |
 | --- | ----- | ------- | ---- | ----- |
-|     |       |         |      |       |
 
 ---
 
 ## Next Milestones
 
-### M1: Project Setup
-
-- [x] Update package.json with correct name/description
-- [x] Define proto file handling strategy
-- [x] Set up proto compilation pipeline
-- [x] Add core dependencies (`apache-arrow`)
-
-### M2: Core Types & Connection
-
-- [x] Define TypeScript types for Flight protocol
-- [x] Implement `FlightClient` connection management
-- [x] Implement `Handshake` for authentication
-- [x] Add TLS configuration support
-
-### M3: Read Operations
-
-- [x] Implement `ListFlights`
-- [x] Implement `GetFlightInfo`
-- [x] Implement `GetSchema`
-- [x] Implement `DoGet` with Arrow IPC decoding
-
-### M4: Write Operations
-
-- [x] Implement `DoPut` with Arrow IPC encoding
-- [x] Implement `DoExchange` for bidirectional streams
-
-### M5: Actions & Polish
-
-- [x] Implement `DoAction`
-- [x] Implement `ListActions`
-- [x] Add comprehensive error handling
-- [x] Documentation and examples
-
-### M6: Testing Infrastructure
-
-- [x] Add test connection configuration for Arrow Flight server
-- [x] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
-- [x] Run tests on Bun (unit + integration)
-- [x] Run tests on Node.js (unit + integration)
-- [x] Run tests on Deno (unit + integration)
-- [x] Enable coverage reporting with threshold enforcement
-- [x] Add test fixtures for Arrow schemas/data (uses test server fixtures)
-
-### M7: Additional Flight Operations
-
-- [x] Implement `cancelFlightInfo` method (CancelFlightInfo action) — needed by arrow-flight-sql-js
-- [x] Export `CancelFlightInfoRequest` / `CancelFlightInfoResult` encoders from generated proto
+_All milestones complete. Define new milestones as needed._
 
 ---
 
