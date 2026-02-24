@@ -21,15 +21,15 @@ for that).
 
 ### Architecture
 
-| Component | Technology            |
-| --------- | --------------------- |
-| Language  | TypeScript (ESM-only) |
-| Runtime   | Bun, Node.js 20+      |
-| Build     | TypeScript compiler   |
-| Proto     | ts-proto + grpc-tools |
-| Test      | Bun test runner       |
-| Lint      | ESLint, Prettier      |
-| Docs      | TypeDoc               |
+| Component | Technology             |
+| --------- | ---------------------- |
+| Language  | TypeScript (ESM-only)  |
+| Runtime   | Bun, Node.js 20+, Deno |
+| Build     | TypeScript compiler    |
+| Proto     | ts-proto + grpc-tools  |
+| Test      | Vitest                 |
+| Lint      | ESLint, Prettier       |
+| Docs      | TypeDoc                |
 
 ### Modules
 
@@ -158,10 +158,10 @@ for that).
 
 - [x] Add test connection configuration for Arrow Flight server
 - [x] Create integration test suite (listFlights, getFlightInfo, doGet, doPut)
-- [ ] Run tests on Bun (unit + integration)
-- [ ] Run tests on Node.js (unit + integration)
-- [ ] Run tests on Deno (unit + integration)
-- [ ] Enable coverage reporting with threshold enforcement
+- [x] Run tests on Bun (unit + integration)
+- [x] Run tests on Node.js (unit + integration)
+- [x] Run tests on Deno (unit + integration)
+- [x] Enable coverage reporting with threshold enforcement
 - [x] Add test fixtures for Arrow schemas/data (uses test server fixtures)
 
 ### M7: Additional Flight Operations
