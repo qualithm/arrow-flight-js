@@ -117,7 +117,11 @@ for that).
 
 ## Next Milestones
 
-_All milestones complete. Define new milestones as needed._
+### Coverage & Documentation
+
+- [ ] Run `test:coverage`, verify 80% threshold
+- [ ] Fix coverage gaps if below threshold
+- [ ] Review and enhance TypeDoc output
 
 ---
 
