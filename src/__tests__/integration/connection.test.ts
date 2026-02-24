@@ -9,7 +9,7 @@
  * bun test src/__tests__/integration
  * ```
  */
-import { afterEach, describe, expect, it } from "bun:test"
+import { afterEach, describe, expect, it } from "vitest"
 
 import { createFlightClient, FlightClient } from "../../client"
 import { config } from "./config"

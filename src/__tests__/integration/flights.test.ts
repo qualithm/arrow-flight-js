@@ -3,7 +3,7 @@
  *
  * Requires a running Arrow Flight server with test fixtures.
  */
-import { afterAll, beforeAll, describe, expect, it } from "bun:test"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createFlightClient, type FlightClient, pathDescriptor } from "../../index"
 import { config } from "./config"

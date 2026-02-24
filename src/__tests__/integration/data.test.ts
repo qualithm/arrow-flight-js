@@ -4,7 +4,7 @@
  * Requires a running Arrow Flight server with test fixtures.
  */
 import { tableFromIPC } from "apache-arrow"
-import { afterAll, beforeAll, describe, expect, it } from "bun:test"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import {
   collectFlightDataAsIpc,

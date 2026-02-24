@@ -16,6 +16,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["eslint*.config.ts", "src", "scripts", "bench", "examples"],
+  "include": ["eslint*.config.ts", "vitest.config.ts", "src", "scripts", "bench", "examples"],
   "exclude": ["src/generated"]
 }
