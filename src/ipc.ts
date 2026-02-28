@@ -33,7 +33,7 @@ const IPC_CONTINUATION_TOKEN = 0xffffffff
  * @example
  * ```ts
  * import { tableFromIPC } from "apache-arrow"
- * import { createFlightClient, flightDataToIpc, pathDescriptor } from "@qualithm/arrow-flight-js"
+ * import { createFlightClient, flightDataToIpc, pathDescriptor } from "@qualithm/arrow-flight"
  *
  * const client = await createFlightClient({ host: "localhost", port: 8815 })
  * const info = await client.getFlightInfo(pathDescriptor("my", "data"))
@@ -104,7 +104,7 @@ export function flightDataToIpc(flightData: FlightData[]): Uint8Array {
  * @example
  * ```ts
  * import { tableFromIPC } from "apache-arrow"
- * import { createFlightClient, collectFlightDataAsIpc, pathDescriptor } from "@qualithm/arrow-flight-js"
+ * import { createFlightClient, collectFlightDataAsIpc, pathDescriptor } from "@qualithm/arrow-flight"
  *
  * const client = await createFlightClient({ host: "localhost", port: 8815 })
  * const info = await client.getFlightInfo(pathDescriptor("my", "data"))

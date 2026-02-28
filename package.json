@@ -1,5 +1,5 @@
 {
-  "name": "@qualithm/arrow-flight-js",
+  "name": "@qualithm/arrow-flight",
   "version": "1.7.7",
   "description": "Arrow Flight client for JavaScript and TypeScript runtimes.",
   "private": false,

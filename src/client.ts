@@ -395,7 +395,7 @@ export class FlightClient {
    *
    * @example
    * ```ts
-   * import { pathDescriptor } from "arrow-flight-js"
+   * import { pathDescriptor } from "@qualithm/arrow-flight"
    *
    * const info = await client.getFlightInfo(pathDescriptor("my", "dataset"))
    * console.log("Schema:", info.schema)
@@ -431,7 +431,7 @@ export class FlightClient {
    *
    * @example
    * ```ts
-   * import { cmdDescriptor } from "arrow-flight-js"
+   * import { cmdDescriptor } from "@qualithm/arrow-flight"
    *
    * const result = await client.getSchema(cmdDescriptor(Buffer.from("SELECT 1")))
    * console.log("Schema bytes:", result.schema.length)

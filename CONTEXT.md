@@ -12,8 +12,8 @@
 Arrow Flight client for JavaScript and TypeScript runtimes.
 
 Provides a high-performance transport layer for Apache Arrow data streams using gRPC. This is the
-**base protocol** library—it does NOT include SQL-specific functionality (see `arrow-flight-sql-js`
-for that).
+**base protocol** library—it does NOT include SQL-specific functionality (see `arrow-flight-sql` for
+that).
 
 **Key capabilities:**
 
@@ -77,9 +77,9 @@ for that).
 
 ### Out of Scope
 
-- SQL query execution (use `arrow-flight-sql-js`)
-- Prepared statements (use `arrow-flight-sql-js`)
-- Database metadata queries (use `arrow-flight-sql-js`)
+- SQL query execution (use `arrow-flight-sql`)
+- Prepared statements (use `arrow-flight-sql`)
+- Database metadata queries (use `arrow-flight-sql`)
 - Server implementation (client-only library)
 
 ---

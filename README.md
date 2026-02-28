@@ -1,14 +1,14 @@
-# Arrow Flight JS
+# Arrow Flight
 
 [![CI](https://github.com/qualithm/arrow-flight-js/actions/workflows/ci.yaml/badge.svg)](https://github.com/qualithm/arrow-flight-js/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/qualithm/arrow-flight-js/graph/badge.svg)](https://codecov.io/gh/qualithm/arrow-flight-js)
-[![npm](https://img.shields.io/npm/v/@qualithm/arrow-flight-js)](https://www.npmjs.com/package/@qualithm/arrow-flight-js)
+[![npm](https://img.shields.io/npm/v/@qualithm/arrow-flight)](https://www.npmjs.com/package/@qualithm/arrow-flight)
 
 Arrow Flight client for JavaScript and TypeScript runtimes.
 
 A high-performance transport layer for Apache Arrow data streams using gRPC. This is the **base
 protocol** library—for SQL functionality, see
-[`@qualithm/arrow-flight-sql-js`](https://github.com/qualithm/arrow-flight-sql-js).
+[`@qualithm/arrow-flight-sql`](https://github.com/qualithm/arrow-flight-sql-js).
 
 ## Features
 
@@ -24,15 +24,15 @@ protocol** library—for SQL functionality, see
 ## Installation
 
 ```bash
-npm install @qualithm/arrow-flight-js
+npm install @qualithm/arrow-flight
 # or
-bun add @qualithm/arrow-flight-js
+bun add @qualithm/arrow-flight
 ```
 
 ## Quick Start
 
 ```typescript
-import { createFlightClient, pathDescriptor } from "@qualithm/arrow-flight-js"
+import { createFlightClient, pathDescriptor } from "@qualithm/arrow-flight"
 
 // Connect to a Flight server
 const client = await createFlightClient({
