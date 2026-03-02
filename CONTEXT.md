@@ -122,7 +122,6 @@ that).
 
 | ID  | Agent | Started | Task | Files |
 | --- | ----- | ------- | ---- | ----- |
-| —   | —     | —       | None | —     |
 
 ---
 

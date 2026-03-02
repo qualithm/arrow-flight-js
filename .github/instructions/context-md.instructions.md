@@ -178,7 +178,6 @@ These rules are non-negotiable.
 
 | ID  | Agent | Started | Task | Files |
 | --- | ----- | ------- | ---- | ----- |
-| —   | —     | —       | None | —     |
 
 ---
 
